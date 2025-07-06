@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>浆料工艺管理系统</title>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --positive-color: #3a5f8f;
+            --negative-color: #8f3a3a;
+            --edit-color: #ff8c00;
+            --bg-color: #1e1e1e;
+            --card-color: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #444;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 10px;
+            padding-bottom: 100px;
+            margin: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            background: var(--card-color);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            gap: 10px;
+        }
+        .material-switch {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+        .material-btn {
+            flex: 1;
+        }
+        .positive-btn {
+            background-color: var(--positive-color);
+            color: white;
+        }
+        .negative-btn {
+            background-color: var(--negative-color);
+            color: white;
+        }
+        .edit-btn {
+            background-color: var(--edit-color);
+            color: white;
+        }
+        .reset-btn {
+            background-color: var(--error-color);
+            color: white;
+        }
+        .btn.active {
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .pot-container {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+        }
+        .pot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .pot-title {
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-waiting {
+            background: #333;
+            color: #aaa;
+        }
+        .status-doing {
+            background: #1a3a5a;
+            color: #64b5f6;
+        }
+        .status-done {
+            background: #1a3a1a;
+            color: #81c784;
+        }
+        .step-card {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: var(--card-color);
+            border-left: 4px solid var(--border-color);
+            position: relative;
+        }
+        .current-step {
+            border-left-color: var(--edit-color);
+            background: #3a3a2a;
+        }
+        .step-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .step-name {
+            font-size: 16px;
+            color: var(--text-color);
+        }
+        .step-number {
+            color: #aaa;
+            font-size: 14px;
+        }
+        .step-detail {
+            font-size: 14px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .detail-label {
+            color: #aaa;
+            min-width: 80px;
+        }
+        .detail-value {
+            flex: 1;
+            text-align: right;
+            color: var(--text-color);
+        }
+        .editable {
+            border-bottom: 1px dashed #666;
+            padding: 2px 4px;
+            min-width: 50px;
+            display: inline-block;
+            text-align: right;
+            background: transparent;
+            color: var(--text-color);
+        }
+        .edit-mode .editable {
+            background: #3a3a2a;
+            border-bottom: 1px solid var(--edit-color);
+        }
+        .step-note {
+            font-size: 13px;
+            color: #ff8c8c;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border-color);
+        }
+        .step-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .btn-complete {
+            background: var(--success-color);
+            color: white;
+        }
+        .btn-start {
+            background: #1976d2;
+            color: white;
+        }
+        .btn-disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .btn-edit {
+            background: var(--edit-color);
+            color: white;
+        }
+        .btn-delete {
+            background: var(--error-color);
+            color: white;
+        }
+        .btn-add {
+            background: var(--success-color);
+            color: white;
+        }
+        .summary-btn, .manage-btn {
+            position: fixed;
+            bottom: 20px;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255,140,0,0.3);
+            z-index: 100;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .summary-btn {
+            left: calc(50% - 150px);
+            background: var(--positive-color);
+        }
+        .manage-btn {
+            left: calc(50% + 10px);
+            background: var(--negative-color);
+        }
+        .edit-mode-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: var(--edit-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 100;
+        }
+        .check-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .check-table th, .check-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+        }
+        .check-table th {
+            background: #333;
+        }
+        .check-table input {
+            width: 100%;
+            padding: 5px;
+            background: #3a3a2a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            text-align: center;
+        }
+        .check-result {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .pass {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+        .fail {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+        .summary-panel, .manage-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .summary-content, .manage-content {
+            background: var(--card-color);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .summary-header, .manage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .summary-title, .manage-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .close-summary, .close-manage {
+            background: var(--error-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .material-summary {
+            margin-bottom: 20px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .summary-table th, .summary-table td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        .summary-table th {
+            background: #333;
+        }
+        .quality-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .quality-table th, .quality-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+        }
+        .quality-table th {
+            background: #333;
+        }
+        .steps-management {
+            margin-top: 20px;
+        }
+        .steps-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+        .steps-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .steps-tab.active {
+            border-bottom-color: var(--edit-color);
+            color: var(--edit-color);
+            font-weight: bold;
+        }
+        .steps-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .step-item {
+            background: #3a3a2a;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid var(--border-color);
+        }
+        .step-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .step-item-name {
+            font-weight: bold;
+        }
+        .step-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .step-item-btn {
+            background: #555;
+            border: none;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .step-item-btn.edit {
+            background: var(--edit-color);
+        }
+        .step-item-btn.delete {
+            background: var(--error-color);
+        }
+        .step-item-btn.up {
+            background: var(--positive-color);
+        }
+        .step-item-btn.down {
+            background: var(--negative-color);
+        }
+        .step-item-details {
+            font-size: 14px;
+            color: #ccc;
+        }
+        .add-step-form {
+            background: #3a3a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px dashed var(--border-color);
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .form-row label {
+            min-width: 80px;
+        }
+        .form-row input, .form-row textarea {
+            flex: 1;
+            padding: 8px;
+            background: #2d2d2d;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+        }
+        .form-row textarea {
+            min-height: 60px;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .bucket-input-container {
+            margin-top: 10px;
+            padding: 10px;
+            background: #333;
+            border-radius: 8px;
+        }
+        .bucket-input-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .bucket-input {
+            flex: 1;
+            padding: 8px;
+            background: #2d2d2d;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            text-align: right;
+        }
+        .bucket-buttons {
+            display: flex;
+            gap: 5px;
+            margin-left: 5px;
+        }
+        .bucket-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .add-bucket-btn {
+            background: var(--positive-color);
+            color: white;
+        }
+        .confirm-bucket-btn {
+            background: var(--edit-color);
+            color: white;
+        }
+        .remove-bucket-btn {
+            background: var(--error-color);
+            color: white;
+        }
+        .weight-summary {
+            margin-top: 10px;
+            padding: 8px;
+            background: #3a3a2a;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .weight-progress {
+            margin-top: 5px;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .weight-progress-bar {
+            height: 100%;
+            background: var(--edit-color);
+            transition: width 0.3s;
+        }
+        .weight-difference {
+            margin-top: 5px;
+            font-size: 13px;
+            color: #ff8c8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>浆料工艺管理系统</h2>
+        <div class="control-panel">
+            <div class="material-switch">
+                <div class="btn material-btn positive-btn active" data-material="positive">正极工艺</div>
+                <div class="btn material-btn negative-btn" data-material="negative">负极工艺</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="positive-pots" class="material-pots">
+        <!-- 正极A1-A4锅 -->
+        <div class="pot-container" id="pot-positive-A1">
+            <div class="pot-header">
+                <div class="pot-title">正极A1锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('positive', 'A1')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+        
+        <div class="pot-container" id="pot-positive-A2">
+            <div class="pot-header">
+                <div class="pot-title">正极A2锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('positive', 'A2')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+        
+        <div class="pot-container" id="pot-positive-A3">
+            <div class="pot-header">
+                <div class="pot-title">正极A3锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('positive', 'A3')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+        
+        <div class="pot-container" id="pot-positive-A4">
+            <div class="pot-header">
+                <div class="pot-title">正极A4锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('positive', 'A4')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+    </div>
+
+    <div id="negative-pots" class="material-pots" style="display:none;">
+        <!-- 负极A1-A4锅 -->
+        <div class="pot-container" id="pot-negative-A1">
+            <div class="pot-header">
+                <div class="pot-title">负极A1锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('negative', 'A1')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+        
+        <div class="pot-container" id="pot-negative-A2">
+            <div class="pot-header">
+                <div class="pot-title">负极A2锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('negative', 'A2')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+        
+        <div class="pot-container" id="pot-negative-A3">
+            <div class="pot-header">
+                <div class="pot-title">负极A3锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('negative', 'A3')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+        
+        <div class="pot-container" id="pot-negative-A4">
+            <div class="pot-header">
+                <div class="pot-title">负极A4锅</div>
+                <div class="status-badge status-waiting">待开始</div>
+            </div>
+            <button class="btn reset-btn" onclick="resetPot('negative', 'A4')">重置锅状态</button>
+            <div class="steps-container"></div>
+        </div>
+    </div>
+
+    <button class="summary-btn" id="show-summary">
+        <i class="fas fa-list"></i> 原料汇总
+    </button>
+    <button class="manage-btn" id="show-manage">
+        <i class="fas fa-cog"></i> 管理工艺
+    </button>
+
+    <div class="summary-panel" id="summary-panel">
+        <div class="summary-content">
+            <div class="summary-header">
+                <div class="summary-title">原料使用汇总</div>
+                <button class="close-summary" id="close-summary">&times;</button>
+            </div>
+            
+            <div class="material-summary">
+                <h3>正极原料</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>原料名称</th>
+                            <th>使用锅号</th>
+                            <th>单锅用量(kg)</th>
+                            <th>实际用量(kg)</th>
+                            <th>总用量(kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positive-summary">
+                        <!-- 动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="material-summary">
+                <h3>负极原料</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>原料名称</th>
+                            <th>使用锅号</th>
+                            <th>单锅用量(kg)</th>
+                            <th>实际用量(kg)</th>
+                            <th>总用量(kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="negative-summary">
+                        <!-- 动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="manage-panel" id="manage-panel">
+        <div class="manage-content">
+            <div class="manage-header">
+                <div class="manage-title">工艺步骤管理</div>
+                <button class="close-manage" id="close-manage">&times;</button>
+            </div>
+            
+            <div class="steps-tabs">
+                <div class="steps-tab active" data-material="positive">正极工艺</div>
+                <div class="steps-tab" data-material="negative">负极工艺</div>
+            </div>
+            
+            <div class="steps-management">
+                <div class="steps-list" id="positive-steps-list">
+                    <!-- 正极步骤列表 -->
+                </div>
+                <div class="steps-list" id="negative-steps-list" style="display:none;">
+                    <!-- 负极步骤列表 -->
+                </div>
+                
+                <div class="add-step-form">
+                    <h4>添加新步骤</h4>
+                    <div class="form-row">
+                        <label>步骤名称:</label>
+                        <input type="text" id="add-step-name" placeholder="输入步骤名称">
+                    </div>
+                    <div class="form-row">
+                        <label>公转转速:</label>
+                        <input type="text" id="add-step-rpm1" placeholder="输入公转转速">
+                    </div>
+                    <div class="form-row">
+                        <label>自转转速:</label>
+                        <input type="text" id="add-step-rpm2" placeholder="输入自转转速">
+                    </div>
+                    <div class="form-row">
+                        <label>时间(min):</label>
+                        <input type="text" id="add-step-time" placeholder="输入时间">
+                    </div>
+                    <div class="form-row">
+                        <label>重量(kg):</label>
+                        <input type="text" id="add-step-weight" placeholder="输入重量">
+                    </div>
+                    <div class="form-row">
+                        <label>误差:</label>
+                        <input type="text" id="add-step-error" placeholder="输入误差">
+                    </div>
+                    <div class="form-row">
+                        <label>真空:</label>
+                        <input type="text" id="add-step-vacuum" placeholder="输入真空">
+                    </div>
+                    <div class="form-row">
+                        <label>备注:</label>
+                        <textarea id="add-step-note" placeholder="输入备注"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            <input type="checkbox" id="add-step-material"> 是原料添加步骤
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            <input type="checkbox" id="add-step-final"> 是最终检查步骤
+                        </label>
+                    </div>
+                    <div id="add-step-check-standards" class="check-standards" style="display:none;">
+                        <h4>检查标准</h4>
+                        <div id="add-step-check-items">
+                            <!-- 动态生成检查标准 -->
+                        </div>
+                        <button type="button" class="add-check-standard" onclick="addCheckStandard('add')">添加检查标准</button>
+                    </div>
+                    <div class="form-actions">
+                        <button class="action-btn btn-add" onclick="addStepToTemplate()">添加步骤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-step-modal" class="manage-panel" style="display:none;">
+        <div class="manage-content">
+            <div class="manage-header">
+                <div class="manage-title">编辑步骤</div>
+                <button class="close-manage" onclick="closeEditStepModal()">&times;</button>
+            </div>
+            
+            <div class="step-form">
+                <input type="hidden" id="edit-step-index">
+                <input type="hidden" id="edit-step-material">
+                <div class="form-row">
+                    <label>步骤名称:</label>
+                    <input type="text" id="edit-step-name" placeholder="输入步骤名称">
+                </div>
+                <div class="form-row">
+                    <label>公转转速:</label>
+                    <input type="text" id="edit-step-rpm1" placeholder="输入公转转速">
+                </div>
+                <div class="form-row">
+                    <label>自转转速:</label>
+                    <input type="text" id="edit-step-rpm2" placeholder="输入自转转速">
+                </div>
+                <div class="form-row">
+                    <label>时间(min):</label>
+                    <input type="text" id="edit-step-time" placeholder="输入时间">
+                </div>
+                <div class="form-row">
+                    <label>重量(kg):</label>
+                    <input type="text" id="edit-step-weight" placeholder="输入重量">
+                </div>
+                <div class="form-row">
+                    <label>误差:</label>
+                    <input type="text" id="edit-step-error" placeholder="输入误差">
+                </div>
+                <div class="form-row">
+                    <label>真空:</label>
+                    <input type="text" id="edit-step-vacuum" placeholder="输入真空">
+                </div>
+                <div class="form-row">
+                    <label>备注:</label>
+                    <textarea id="edit-step-note" placeholder="输入备注"></textarea>
+                </div>
+                <div class="form-row">
+                    <label>
+                        <input type="checkbox" id="edit-step-material"> 是原料添加步骤
+                    </label>
+                </div>
+                <div class="form-row">
+                    <label>
+                        <input type="checkbox" id="edit-step-final"> 是最终检查步骤
+                    </label>
+                </div>
+                <div id="edit-step-check-standards" class="check-standards" style="display:none;">
+                    <h4>检查标准</h4>
+                    <div id="edit-step-check-items">
+                        <!-- 动态生成检查标准 -->
+                    </div>
+                    <button type="button" class="add-check-standard" onclick="addCheckStandard('edit')">添加检查标准</button>
+                </div>
+                <div class="form-actions">
+                    <button class="action-btn btn-add" onclick="saveEditedStep()">保存更改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 工艺步骤模板数据
+        const stepTemplates = {
+            positive: [
+                { step: 1, name: "加NMP", rpm1: "", rpm2: "", time: "", weight: "771.45", error: "±0.5", vacuum: "", note: "受控文件", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 2, name: "加PVDF", rpm1: "", rpm2: "", time: "", weight: "25.76", error: "±0.02", vacuum: "", note: "不抽真空、不开循环水", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 3, name: "搅拌", rpm1: "25", rpm2: "500", time: "10", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 4, name: "刮料（10min）", rpm1: "", rpm2: "", time: "", weight: "", error: "", vacuum: "", note: "10min", isMaterial: false },
+                { step: 5, name: "搅拌", rpm1: "30", rpm2: "1000", time: "180", weight: "", error: "", vacuum: "约-0.085Mpa", note: "抽真空、开循环水温度10-40℃", isMaterial: false },
+                { step: 6, name: "加SP", rpm1: "", rpm2: "", time: "", weight: "24.69", error: "±0.02", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 7, name: "搅拌", rpm1: "30", rpm2: "1000", time: "10", weight: "", error: "", vacuum: "无", note: "不抽真空、不开循环水温度10-40℃", isMaterial: false },
+                { step: 8, name: "刮料（10min）", rpm1: "", rpm2: "", time: "", weight: "", error: "", vacuum: "", note: "10min", isMaterial: false },
+                { step: 9, name: "搅拌", rpm1: "30", rpm2: "1000", time: "80", weight: "", error: "", vacuum: "约-0.085Mpa", note: "抽真空、开循环水温度10-40℃", isMaterial: false },
+                { step: 10, name: "加CNT", rpm1: "", rpm2: "", time: "", weight: "349.47", error: "±0.5", vacuum: "无", note: "不抽真空、不开循环水温度10-40℃", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 11, name: "搅拌", rpm1: "30", rpm2: "1000", time: "30", weight: "", error: "", vacuum: "约-0.085Mpa", note: "抽真空、开循环水温度10-40℃", isMaterial: false },
+                { step: 12, name: "一次胶液", rpm1: "", rpm2: "", time: "", weight: "937.09", error: "80.00%", vacuum: "", note: "", isMaterial: false },
+                { step: 13, name: "加正极主材50%", rpm1: "30", rpm2: "10", time: "", weight: "1039.02", error: "±0.5", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 14, name: "加正极主材30%", rpm1: "30", rpm2: "10", time: "", weight: "623.41", error: "±0.5", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 15, name: "加正极主材20%", rpm1: "30", rpm2: "30", time: "", weight: "415.61", error: "±0.5", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 16, name: "加草酸", rpm1: "", rpm2: "", time: "", weight: "3.22", error: "±0.02", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 17, name: "刮料（10min）", rpm1: "", rpm2: "", time: "", weight: "", error: "", vacuum: "", note: "10min", isMaterial: false },
+                { step: 18, name: "搅拌", rpm1: "30", rpm2: "500", time: "60", weight: "", error: "", vacuum: "约-0.085Mpa", note: "抽真空、开循环水温度10-40℃", isMaterial: false },
+                { step: 19, name: "刮料（10min）", rpm1: "", rpm2: "", time: "", weight: "", error: "", vacuum: "无", note: "不抽真空、不开循环水温度10-40℃", isMaterial: false },
+                { step: 20, name: "二次胶液", rpm1: "", rpm2: "", time: "", weight: "234.27", error: "20.00%", vacuum: "", note: "", isMaterial: false },
+                { step: 21, name: "搅拌", rpm1: "30", rpm2: "800", time: "10", weight: "", error: "", vacuum: "约-0.085Mpa", note: "抽真空、开循环水温度10-40℃", isMaterial: false },
+                { step: 22, name: "搅拌", rpm1: "30", rpm2: "1150", time: "80", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 23, name: "NMP调粘度", rpm1: "30", rpm2: "1050", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 24, name: "粘度OK低速慢搅", rpm1: "5", rpm2: "", time: "720", weight: "", error: "", vacuum: "", note: "抽真空、不开循环水温度10-40℃", isMaterial: false },
+                { step: 25, name: "浆料过夜", rpm1: "5", rpm2: "0", time: "1440", weight: "", error: "", vacuum: "约-0.085Mpa", note: "抽真空、开循环水温度10-40℃;时间不能超过24h", isMaterial: false },
+                { step: 26, name: "过夜浆料使用前", rpm1: "30", rpm2: "800", time: "30", weight: "", error: "", vacuum: "", note: "动作完成后进行转移", isMaterial: false },
+                { 
+                    step: 27, 
+                    name: "浆料粘度固含", 
+                    rpm1: "", 
+                    rpm2: "", 
+                    time: "0", 
+                    weight: "", 
+                    error: "", 
+                    vacuum: "", 
+                    note: "6000±1500cm,66.0±2.0%,细度<15", 
+                    isMaterial: false,
+                    isFinalCheck: true,
+                    checkStandards: [
+                        { name: "粘度", standard: "6000±1500", unit: "cp" },
+                        { name: "固含", standard: "66.0±2.0", unit: "%" },
+                        { name: "细度", standard: "<15", unit: "μm" }
+                    ],
+                    actualValues: {
+                        "粘度": "",
+                        "固含": "",
+                        "细度": ""
+                    }
+                }
+            ],
+            negative: [
+                { step: 1, name: "加热D", rpm1: "", rpm2: "", time: "", weight: "850.53", error: "±0.5", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 2, name: "加压K", rpm1: "", rpm2: "", time: "", weight: "12.21", error: "±0.02", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 3, name: "搅拌", rpm1: "25", rpm2: "800", time: "15", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 4, name: "搅拌", rpm1: "30", rpm2: "800", time: "100", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 5, name: "搅拌", rpm1: "30", rpm2: "800", time: "", weight: "100.78", error: "±0.02", vacuum: "", note: "", isMaterial: false },
+                { step: 6, name: "搅拌", rpm1: "30", rpm2: "800", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 7, name: "加压K", rpm1: "", rpm2: "", time: "", weight: "6.56", error: "±0.02", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 8, name: "搅拌", rpm1: "25", rpm2: "1000", time: "15", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 9, name: "搅拌", rpm1: "30", rpm2: "1000", time: "90", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 10, name: "一次胶液", rpm1: "/", rpm2: "/", time: "", weight: "75.08", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 11, name: "加压50%", rpm1: "30", rpm2: "/", time: "15", weight: "527.14", error: "±0.5", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 12, name: "加压50%", rpm1: "30", rpm2: "/", time: "15", weight: "527.14", error: "±0.5", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 13, name: "水胶液", rpm1: "300", rpm2: "500", time: "60", weight: "228.35", error: "25.00%", vacuum: "", note: "", isMaterial: false },
+                { step: 14, name: "水胶液", rpm1: "300", rpm2: "1000", time: "60", weight: "228.35", error: "25.00%", vacuum: "", note: "", isMaterial: false },
+                { step: 15, name: "粘度CT1>500Np", rpm1: "30", rpm2: "1150", time: "120", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 16, name: "粘度CT1<500Np", rpm1: "30", rpm2: "1150", time: "120", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 17, name: "加压K", rpm1: "", rpm2: "", time: "", weight: "5.74", error: "±0.02", vacuum: "", note: "", isMaterial: true, actualWeight: "", buckets: [] },
+                { step: 18, name: "粘度CT2>400Np", rpm1: "20", rpm2: "800", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 19, name: "粘度CT2<400Np", rpm1: "20", rpm2: "800", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 20, name: "粘度CA试液", rpm1: "5", rpm2: "4", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 21, name: "浆料过滤", rpm1: "5", rpm2: "6", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { step: 22, name: "过滤浆料使用前", rpm1: "30", rpm2: "1000", time: "30", weight: "", error: "", vacuum: "", note: "", isMaterial: false },
+                { 
+                    step: 23, 
+                    name: "浆料粘度试验", 
+                    rpm1: "3500±1000rp", 
+                    rpm2: "55.5±2.0%", 
+                    time: "温度<15", 
+                    weight: "", 
+                    error: "", 
+                    vacuum: "温度：23±0℃，湿度：≤20min", 
+                    note: "100H+20H过筛",
+                    isMaterial: false,
+                    isFinalCheck: true,
+                    checkStandards: [
+                        { name: "粘度", standard: "3500±1000", unit: "cp" },
+                        { name: "固含", standard: "55.5±2.0", unit: "%" },
+                        { name: "细度", standard: "<15", unit: "μm" }
+                    ],
+                    actualValues: {
+                        "粘度": "",
+                        "固含": "",
+                        "细度": ""
+                    }
+                }
+            ]
+        };
+
+        // 保存工艺模板到localStorage
+        function saveTemplatesToLocalStorage() {
+            localStorage.setItem('batterySlurryTemplates', JSON.stringify(stepTemplates));
+        }
+
+        // 从localStorage加载工艺模板
+        function loadTemplatesFromLocalStorage() {
+            const savedData = localStorage.getItem('batterySlurryTemplates');
+            if (savedData) {
+                return JSON.parse(savedData);
+            }
+            return null;
+        }
+
+        // 保存所有锅的状态到localStorage
+        function savePotStatusToLocalStorage() {
+            localStorage.setItem('batterySlurryPotStatus', JSON.stringify(potStatus));
+        }
+
+        // 从localStorage加载锅的状态
+        function loadPotStatusFromLocalStorage() {
+            const savedData = localStorage.getItem('batterySlurryPotStatus');
+            if (savedData) {
+                return JSON.parse(savedData);
+            }
+            return null;
+        }
+
+        // 初始化所有锅的进度（尝试从localStorage加载，否则使用默认值）
+        let potStatus = loadPotStatusFromLocalStorage() || {
+            "positive": {
+                "A1": { currentStep: 1 },
+                "A2": { currentStep: 1 },
+                "A3": { currentStep: 1 },
+                "A4": { currentStep: 1 }
+            },
+            "negative": {
+                "A1": { currentStep: 1 },
+                "A2": { currentStep: 1 },
+                "A3": { currentStep: 1 },
+                "A4": { currentStep: 1 }
+            }
+        };
+
+        // 加载或初始化工艺模板
+        const loadedTemplates = loadTemplatesFromLocalStorage();
+        if (loadedTemplates) {
+            stepTemplates.positive = loadedTemplates.positive;
+            stepTemplates.negative = loadedTemplates.negative;
+        }
+
+        // 当前选中的材料类型
+        let currentMaterial = "positive";
+        // 当前编辑的字段
+        let currentEditField = null;
+
+        // 切换正极/负极显示
+        function switchMaterial(material) {
+            currentMaterial = material;
+            document.querySelectorAll('.material-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.material-btn[data-material="${material}"]`).classList.add('active');
+            
+            document.getElementById('positive-pots').style.display = material === 'positive' ? 'block' : 'none';
+            document.getElementById('negative-pots').style.display = material === 'negative' ? 'block' : 'none';
+        }
+
+        // 重置锅状态
+        function resetPot(material, potId) {
+            if (!confirm(`确定要重置${material === 'positive' ? '正极' : '负极'}${potId}锅的状态吗？所有进度将归零。`)) {
+                return;
+            }
+            
+            potStatus[material][potId] = { currentStep: 1 };
+            savePotStatusToLocalStorage();
+            renderPot(material, potId);
+        }
+
+        // 渲染单个锅的进度
+        function renderPot(material, potId) {
+            const potData = potStatus[material][potId];
+            const container = document.querySelector(`#pot-${material}-${potId} .steps-container`);
+            container.innerHTML = '';
+
+            const currentStepIndex = potData.currentStep - 1;
+            const stepsToShow = stepTemplates[material].slice(currentStepIndex, currentStepIndex + 2);
+
+            stepsToShow.forEach((step, index) => {
+                const isCurrent = index === 0;
+                const stepEl = document.createElement('div');
+                stepEl.className = `step-card ${isCurrent ? 'current-step' : ''}`;
+                
+                const timeText = step.time ? `${step.time}分钟` : '立即完成';
+                const isFinalStepWithCheck = step.isFinalCheck && potData.currentStep === stepTemplates[material].length;
+                const showBucketInputs = isCurrent && step.isMaterial;
+                
+                // 确保buckets数组存在
+                if (showBucketInputs && !step.buckets) {
+                    step.buckets = [];
+                }
+                
+                // 计算当前总重量和剩余重量
+                let totalWeight = 0;
+                let remainingWeight = 0;
+                let progressPercent = 0;
+                
+                if (showBucketInputs) {
+                    totalWeight = step.buckets.reduce((sum, bucket) => sum + (parseFloat(bucket.weight) || 0), 0);
+                    const targetWeight = parseFloat(step.weight) || 0;
+                    remainingWeight = targetWeight - totalWeight;
+                    progressPercent = targetWeight > 0 ? Math.min(100, (totalWeight / targetWeight) * 100) : 0;
+                    
+                    // 更新实际重量
+                    step.actualWeight = totalWeight.toFixed(2);
+                }
+                
+                stepEl.innerHTML = `
+                    <div class="step-title">
+                        <span class="step-name">${step.name}</span>
+                        <span class="step-number">步骤 ${step.step}</span>
+                    </div>
+                    ${step.rpm1 || step.rpm2 ? `
+                        <div class="step-detail">
+                            <span class="detail-label">转速:</span>
+                            <span class="detail-value">
+                                <span class="editable" data-field="rpm1">${step.rpm1 || '-'}</span>/
+                                <span class="editable" data-field="rpm2">${step.rpm2 || '-'}</span> rpm
+                            </span>
+                        </div>
+                    ` : ''}
+                    ${step.weight ? `
+                        <div class="step-detail">
+                            <span class="detail-label">重量:</span>
+                            <span class="detail-value">
+                                <span class="editable" data-field="weight">${step.weight}</span> kg
+                                ${step.error ? `(<span class="editable" data-field="error">${step.error}</span>)` : ''}
+                            </span>
+                        </div>
+                    ` : ''}
+                    ${step.vacuum ? `
+                        <div class="step-detail">
+                            <span class="detail-label">真空:</span>
+                            <span class="detail-value editable" data-field="vacuum">${step.vacuum}</span>
+                        </div>
+                    ` : ''}
+                    ${step.time ? `
+                        <div class="step-detail">
+                            <span class="detail-label">时间:</span>
+                            <span class="detail-value editable" data-field="time">${timeText}</span>
+                        </div>
+                    ` : ''}
+                    ${step.note ? `
+                        <div class="step-detail">
+                            <span class="detail-label">备注:</span>
+                            <span class="detail-value editable" data-field="note">${step.note}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${showBucketInputs ? `
+                        <div class="bucket-input-container">
+                            <div id="bucket-inputs-${material}-${potId}-${step.step}">
+                                ${step.buckets.map((bucket, i) => `
+                                    <div class="bucket-input-row">
+                                        <input type="number" class="bucket-input" 
+                                            value="${bucket.input || ''}" 
+                                            placeholder="输入桶重量"
+                                            id="bucket-input-${material}-${potId}-${step.step}-${i}">
+                                        <div class="bucket-buttons">
+                                            <button class="bucket-btn confirm-bucket-btn" 
+                                                onclick="confirmBucketWeight('${material}', '${potId}', ${step.step}, ${i})">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="bucket-btn remove-bucket-btn" 
+                                                onclick="removeBucket('${material}', '${potId}', ${step.step}, ${i})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        ${bucket.weight ? `<span style="margin-left:10px;">已确认: ${bucket.weight} kg</span>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="bucket-btn add-bucket-btn" 
+                                onclick="addBucket('${material}', '${potId}', ${step.step})">
+                                <i class="fas fa-plus"></i> 添加一桶
+                            </button>
+                            
+                            <div class="weight-summary">
+                                <div>当前总重量: <strong>${totalWeight.toFixed(2)} kg</strong> / 目标: ${step.weight} kg</div>
+                                <div class="weight-progress">
+                                    <div class="weight-progress-bar" style="width: ${progressPercent}%"></div>
+                                </div>
+                                <div class="weight-difference">
+                                    ${remainingWeight > 0 ? 
+                                        `还需加入: ${remainingWeight.toFixed(2)} kg` : 
+                                        `已超过标准: ${Math.abs(remainingWeight).toFixed(2)} kg`}
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${isFinalStepWithCheck ? `
+                        <div class="check-table-container">
+                            <table class="check-table">
+                                <thead>
+                                    <tr>
+                                        <th>检测项目</th>
+                                        <th>标准值</th>
+                                        <th>实测值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${step.checkStandards.map(item => `
+                                        <tr>
+                                            <td>${item.name}(${item.unit})</td>
+                                            <td>${item.standard}</td>
+                                            <td><input type="text" class="check-value" data-name="${item.name}" placeholder="输入实测值" value="${step.actualValues[item.name] || ''}"></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="step-actions">
+                        ${isCurrent ? 
+                            `<div style="display: flex; gap: 8px; width: 100%;">
+                                <button class="action-btn btn-complete" style="flex: 1;" onclick="completeStep('${material}', '${potId}')">
+                                    ${isFinalStepWithCheck ? '检查并出锅' : '完成此步骤'}
+                                </button>
+                            </div>` : 
+                            `<button class="action-btn btn-disabled">
+                                等待中
+                            </button>`
+                        }
+                    </div>
+                `;
+                
+                container.appendChild(stepEl);
+                
+                // 如果是最后一步且有检查标准，添加检查事件
+                if (isFinalStepWithCheck) {
+                    const inputs = stepEl.querySelectorAll('.check-value');
+                    inputs.forEach(input => {
+                        input.addEventListener('input', function() {
+                            const step = stepTemplates[material].find(s => s.step === step.step);
+                            if (step) {
+                                const name = this.getAttribute('data-name');
+                                step.actualValues[name] = this.value;
+                                saveTemplatesToLocalStorage();
+                            }
+                        });
+                    });
+                }
+            });
+
+            // 更新锅状态
+            const statusEl = document.querySelector(`#pot-${material}-${potId} .status-badge`);
+            if (potData.currentStep > stepTemplates[material].length) {
+                statusEl.textContent = "已完成";
+                statusEl.className = "status-badge status-done";
+            } else if (potData.currentStep > 1) {
+                statusEl.textContent = "进行中";
+                statusEl.className = "status-badge status-doing";
+            } else {
+                statusEl.textContent = "待开始";
+                statusEl.className = "status-badge status-waiting";
+            }
+        }
+
+        // 添加一桶原料
+        function addBucket(material, potId, stepNumber) {
+            const step = stepTemplates[material].find(s => s.step === stepNumber);
+            if (!step) return;
+            
+            if (!step.buckets) {
+                step.buckets = [];
+            }
+            
+            step.buckets.push({
+                input: "",
+                weight: ""
+            });
+            saveTemplatesToLocalStorage();
+            renderPot(material, potId);
+            
+            // 自动聚焦到新添加的输入框
+            setTimeout(() => {
+                const newIndex = step.buckets.length - 1;
+                const input = document.getElementById(`bucket-input-${material}-${potId}-${stepNumber}-${newIndex}`);
+                if (input) {
+                    input.focus();
+                }
+            }, 100);
+        }
+
+        // 确认桶重量
+        function confirmBucketWeight(material, potId, stepNumber, index) {
+            const step = stepTemplates[material].find(s => s.step === stepNumber);
+            if (!step || !step.buckets || !step.buckets[index]) return;
+            
+            const input = document.getElementById(`bucket-input-${material}-${potId}-${stepNumber}-${index}`);
+            if (!input) return;
+            
+            const weight = parseFloat(input.value);
+            if (isNaN(weight)) {
+                alert("请输入有效的重量数值");
+                return;
+            }
+            
+            step.buckets[index].weight = weight.toFixed(2);
+            step.buckets[index].input = input.value;
+            
+            // 重新计算实际总重量
+            const totalWeight = step.buckets.reduce((sum, bucket) => sum + (parseFloat(bucket.weight) || 0), 0);
+            step.actualWeight = totalWeight.toFixed(2);
+            
+            saveTemplatesToLocalStorage();
+            renderPot(material, potId);
+        }
+
+        // 移除一桶原料
+        function removeBucket(material, potId, stepNumber, index) {
+            const step = stepTemplates[material].find(s => s.step === stepNumber);
+            if (!step || !step.buckets || !step.buckets[index]) return;
+            
+            step.buckets.splice(index, 1);
+            
+            // 重新计算实际总重量
+            const totalWeight = step.buckets.reduce((sum, bucket) => sum + (parseFloat(bucket.weight) || 0), 0);
+            step.actualWeight = totalWeight.toFixed(2);
+            
+            saveTemplatesToLocalStorage();
+            renderPot(material, potId);
+        }
+
+        // 渲染所有锅
+        function renderAllPots() {
+            for (const material of ['positive', 'negative']) {
+                for (const potId of ['A1', 'A2', 'A3', 'A4']) {
+                    renderPot(material, potId);
+                }
+            }
+        }
+
+        // 完成当前步骤
+        function completeStep(material, potId) {
+            const potData = potStatus[material][potId];
+            const currentStep = stepTemplates[material][potData.currentStep - 1];
+            
+            // 如果是原料步骤，检查是否有未确认的桶
+            if (currentStep.isMaterial && currentStep.buckets) {
+                const hasUnconfirmed = currentStep.buckets.some(b => b.input && !b.weight);
+                if (hasUnconfirmed) {
+                    alert("请先确认所有桶的重量");
+                    return;
+                }
+            }
+            
+            // 如果是最后一步且有检查标准，保存实测值
+            if (currentStep.isFinalCheck) {
+                const inputs = document.querySelectorAll(`#pot-${material}-${potId} .check-value`);
+                inputs.forEach(input => {
+                    const name = input.getAttribute('data-name');
+                    currentStep.actualValues[name] = input.value;
+                });
+            }
+            
+            if (potData.currentStep <= stepTemplates[material].length) {
+                potData.currentStep += 1;
+                renderPot(material, potId);
+            }
+            savePotStatusToLocalStorage();
+            saveTemplatesToLocalStorage();
+        }
+
+        // 生成原料汇总
+        function generateMaterialSummary() {
+            const positiveSummary = document.getElementById('positive-summary');
+            const negativeSummary = document.getElementById('negative-summary');
+            
+            positiveSummary.innerHTML = '';
+            negativeSummary.innerHTML = '';
+            
+            // 统计正极原料
+            const positiveMaterials = {};
+            for (const potId of ['A1', 'A2', 'A3', 'A4']) {
+                const potData = potStatus.positive[potId];
+                for (let i = 0; i < potData.currentStep - 1; i++) {
+                    const step = stepTemplates.positive[i];
+                    if (step.isMaterial && step.weight) {
+                        if (!positiveMaterials[step.name]) {
+                            positiveMaterials[step.name] = {
+                                pots: [],
+                                weight: step.weight,
+                                actualWeights: {},
+                                total: 0,
+                                actualTotal: 0
+                            };
+                        }
+                        if (!positiveMaterials[step.name].pots.includes(potId)) {
+                            positiveMaterials[step.name].pots.push(potId);
+                            positiveMaterials[step.name].actualWeights[potId] = step.actualWeight || step.weight;
+                            positiveMaterials[step.name].total += parseFloat(step.weight) || 0;
+                            positiveMaterials[step.name].actualTotal += parseFloat(step.actualWeight || step.weight) || 0;
+                        }
+                    }
+                }
+            }
+            
+            // 统计负极原料
+            const negativeMaterials = {};
+            for (const potId of ['A1', 'A2', 'A3', 'A4']) {
+                const potData = potStatus.negative[potId];
+                for (let i = 0; i < potData.currentStep - 1; i++) {
+                    const step = stepTemplates.negative[i];
+                    if (step.isMaterial && step.weight) {
+                        if (!negativeMaterials[step.name]) {
+                            negativeMaterials[step.name] = {
+                                pots: [],
+                                weight: step.weight,
+                                actualWeights: {},
+                                total: 0,
+                                actualTotal: 0
+                            };
+                        }
+                        if (!negativeMaterials[step.name].pots.includes(potId)) {
+                            negativeMaterials[step.name].pots.push(potId);
+                            negativeMaterials[step.name].actualWeights[potId] = step.actualWeight || step.weight;
+                            negativeMaterials[step.name].total += parseFloat(step.weight) || 0;
+                            negativeMaterials[step.name].actualTotal += parseFloat(step.actualWeight || step.weight) || 0;
+                        }
+                    }
+                }
+            }
+            
+            // 生成正极汇总表格
+            for (const [name, data] of Object.entries(positiveMaterials)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${name}</td>
+                    <td>${data.pots.join(', ')}</td>
+                    <td>${data.weight}</td>
+                    <td>${data.actualTotal.toFixed(2)}</td>
+                    <td>${data.total.toFixed(2)}</td>
+                `;
+                positiveSummary.appendChild(row);
+            }
+            
+            // 生成负极汇总表格
+            for (const [name, data] of Object.entries(negativeMaterials)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${name}</td>
+                    <td>${data.pots.join(', ')}</td>
+                    <td>${data.weight}</td>
+                    <td>${data.actualTotal.toFixed(2)}</td>
+                    <td>${data.total.toFixed(2)}</td>
+                `;
+                negativeSummary.appendChild(row);
+            }
+        }
+
+        // 渲染工艺步骤管理界面
+        function renderStepsManagement() {
+            const positiveList = document.getElementById('positive-steps-list');
+            const negativeList = document.getElementById('negative-steps-list');
+            
+            positiveList.innerHTML = '';
+            negativeList.innerHTML = '';
+            
+            // 渲染正极步骤
+            stepTemplates.positive.forEach((step, index) => {
+                const stepItem = document.createElement('div');
+                stepItem.className = 'step-item';
+                stepItem.innerHTML = `
+                    <div class="step-item-header">
+                        <div class="step-item-name">${step.step}. ${step.name}</div>
+                        <div class="step-item-actions">
+                            <button class="step-item-btn edit" onclick="editStep('positive', ${index})">编辑</button>
+                            <button class="step-item-btn delete" onclick="deleteStep('positive', ${index})">删除</button>
+                            ${index > 0 ? `<button class="step-item-btn up" onclick="moveStep('positive', ${index}, 'up')">上移</button>` : ''}
+                            ${index < stepTemplates.positive.length - 1 ? `<button class="step-item-btn down" onclick="moveStep('positive', ${index}, 'down')">下移</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="step-item-details">
+                        ${step.rpm1 || step.rpm2 ? `转速: ${step.rpm1 || '-'}/${step.rpm2 || '-'} rpm<br>` : ''}
+                        ${step.weight ? `重量: ${step.weight} kg ${step.error ? `(${step.error})` : ''}<br>` : ''}
+                        ${step.vacuum ? `真空: ${step.vacuum}<br>` : ''}
+                        ${step.time ? `时间: ${step.time}分钟<br>` : ''}
+                        ${step.note ? `备注: ${step.note}<br>` : ''}
+                        ${step.isMaterial ? `<span style="color: var(--edit-color);">[原料步骤]</span><br>` : ''}
+                        ${step.isFinalCheck ? `<span style="color: var(--success-color);">[最终检查]</span>` : ''}
+                    </div>
+                `;
+                positiveList.appendChild(stepItem);
+            });
+            
+            // 渲染负极步骤
+            stepTemplates.negative.forEach((step, index) => {
+                const stepItem = document.createElement('div');
+                stepItem.className = 'step-item';
+                stepItem.innerHTML = `
+                    <div class="step-item-header">
+                        <div class="step-item-name">${step.step}. ${step.name}</div>
+                        <div class="step-item-actions">
+                            <button class="step-item-btn edit" onclick="editStep('negative', ${index})">编辑</button>
+                            <button class="step-item-btn delete" onclick="deleteStep('negative', ${index})">删除</button>
+                            ${index > 0 ? `<button class="step-item-btn up" onclick="moveStep('negative', ${index}, 'up')">上移</button>` : ''}
+                            ${index < stepTemplates.negative.length - 1 ? `<button class="step-item-btn down" onclick="moveStep('negative', ${index}, 'down')">下移</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="step-item-details">
+                        ${step.rpm1 || step.rpm2 ? `转速: ${step.rpm1 || '-'}/${step.rpm2 || '-'} rpm<br>` : ''}
+                        ${step.weight ? `重量: ${step.weight} kg ${step.error ? `(${step.error})` : ''}<br>` : ''}
+                        ${step.vacuum ? `真空: ${step.vacuum}<br>` : ''}
+                        ${step.time ? `时间: ${step.time}分钟<br>` : ''}
+                        ${step.note ? `备注: ${step.note}<br>` : ''}
+                        ${step.isMaterial ? `<span style="color: var(--edit-color);">[原料步骤]</span><br>` : ''}
+                        ${step.isFinalCheck ? `<span style="color: var(--success-color);">[最终检查]</span>` : ''}
+                    </div>
+                `;
+                negativeList.appendChild(stepItem);
+            });
+        }
+
+        // 编辑步骤
+        function editStep(material, index) {
+            const step = stepTemplates[material][index];
+            document.getElementById('edit-step-index').value = index;
+            document.getElementById('edit-step-material').value = material;
+            document.getElementById('edit-step-name').value = step.name;
+            document.getElementById('edit-step-rpm1').value = step.rpm1 || '';
+            document.getElementById('edit-step-rpm2').value = step.rpm2 || '';
+            document.getElementById('edit-step-time').value = step.time || '';
+            document.getElementById('edit-step-weight').value = step.weight || '';
+            document.getElementById('edit-step-error').value = step.error || '';
+            document.getElementById('edit-step-vacuum').value = step.vacuum || '';
+            document.getElementById('edit-step-note').value = step.note || '';
+            document.getElementById('edit-step-material').checked = step.isMaterial || false;
+            document.getElementById('edit-step-final').checked = step.isFinalCheck || false;
+            
+            // 渲染检查标准
+            const checkItemsContainer = document.getElementById('edit-step-check-items');
+            checkItemsContainer.innerHTML = '';
+            if (step.isFinalCheck && step.checkStandards) {
+                document.getElementById('edit-step-check-standards').style.display = 'block';
+                step.checkStandards.forEach((item, i) => {
+                    const checkItem = document.createElement('div');
+                    checkItem.className = 'form-row';
+                    checkItem.innerHTML = `
+                        <label>标准${i + 1}:</label>
+                        <input type="text" value="${item.name}" placeholder="项目名称" class="check-standard-name">
+                        <input type="text" value="${item.standard}" placeholder="标准值" class="check-standard-value">
+                        <input type="text" value="${item.unit}" placeholder="单位" class="check-standard-unit">
+                        <button class="step-item-btn delete" onclick="this.parentNode.remove()">删除</button>
+                    `;
+                    checkItemsContainer.appendChild(checkItem);
+                });
+            } else {
+                document.getElementById('edit-step-check-standards').style.display = 'none';
+            }
+            
+            document.getElementById('edit-step-modal').style.display = 'block';
+        }
+
+        // 关闭编辑模态框
+        function closeEditStepModal() {
+            document.getElementById('edit-step-modal').style.display = 'none';
+        }
+
+        // 保存编辑的步骤
+        function saveEditedStep() {
+            const index = parseInt(document.getElementById('edit-step-index').value);
+            const material = document.getElementById('edit-step-material').value;
+            const step = stepTemplates[material][index];
+            
+            step.name = document.getElementById('edit-step-name').value;
+            step.rpm1 = document.getElementById('edit-step-rpm1').value;
+            step.rpm2 = document.getElementById('edit-step-rpm2').value;
+            step.time = document.getElementById('edit-step-time').value;
+            step.weight = document.getElementById('edit-step-weight').value;
+            step.error = document.getElementById('edit-step-error').value;
+            step.vacuum = document.getElementById('edit-step-vacuum').value;
+            step.note = document.getElementById('edit-step-note').value;
+            step.isMaterial = document.getElementById('edit-step-material').checked;
+            step.isFinalCheck = document.getElementById('edit-step-final').checked;
+            
+            // 保存检查标准
+            if (step.isFinalCheck) {
+                step.checkStandards = [];
+                const checkItems = document.querySelectorAll('#edit-step-check-items .form-row');
+                checkItems.forEach(item => {
+                    step.checkStandards.push({
+                        name: item.querySelector('.check-standard-name').value,
+                        standard: item.querySelector('.check-standard-value').value,
+                        unit: item.querySelector('.check-standard-unit').value
+                    });
+                });
+                
+                // 初始化实际值对象
+                if (!step.actualValues) {
+                    step.actualValues = {};
+                    step.checkStandards.forEach(item => {
+                        step.actualValues[item.name] = "";
+                    });
+                }
+            }
+            
+            // 更新步骤序号
+            stepTemplates[material].forEach((s, i) => {
+                s.step = i + 1;
+            });
+            
+            saveTemplatesToLocalStorage();
+            renderStepsManagement();
+            renderAllPots();
+            closeEditStepModal();
+        }
+
+        // 删除步骤
+        function deleteStep(material, index) {
+            if (!confirm(`确定要删除"${stepTemplates[material][index].name}"步骤吗？`)) {
+                return;
+            }
+            
+            stepTemplates[material].splice(index, 1);
+            
+            // 更新步骤序号
+            stepTemplates[material].forEach((s, i) => {
+                s.step = i + 1;
+            });
+            
+            saveTemplatesToLocalStorage();
+            renderStepsManagement();
+            renderAllPots();
+        }
+
+        // 移动步骤
+        function moveStep(material, index, direction) {
+            if (direction === 'up' && index > 0) {
+                // 上移
+                const temp = stepTemplates[material][index - 1];
+                stepTemplates[material][index - 1] = stepTemplates[material][index];
+                stepTemplates[material][index] = temp;
+            } else if (direction === 'down' && index < stepTemplates[material].length - 1) {
+                // 下移
+                const temp = stepTemplates[material][index + 1];
+                stepTemplates[material][index + 1] = stepTemplates[material][index];
+                stepTemplates[material][index] = temp;
+            }
+            
+            // 更新步骤序号
+            stepTemplates[material].forEach((s, i) => {
+                s.step = i + 1;
+            });
+            
+            saveTemplatesToLocalStorage();
+            renderStepsManagement();
+            renderAllPots();
+        }
+
+        // 添加检查标准
+        function addCheckStandard(type) {
+            const containerId = type === 'add' ? 'add-step-check-items' : 'edit-step-check-items';
+            const container = document.getElementById(containerId);
+            
+            const checkItem = document.createElement('div');
+            checkItem.className = 'form-row';
+            checkItem.innerHTML = `
+                <label>标准${container.children.length + 1}:</label>
+                <input type="text" placeholder="项目名称" class="check-standard-name">
+                <input type="text" placeholder="标准值" class="check-standard-value">
+                <input type="text" placeholder="单位" class="check-standard-unit">
+                <button class="step-item-btn delete" onclick="this.parentNode.remove()">删除</button>
+            `;
+            container.appendChild(checkItem);
+        }
+
+        // 添加新步骤
+        function addStepToTemplate() {
+            const material = document.querySelector('.steps-tab.active').getAttribute('data-material');
+            const name = document.getElementById('add-step-name').value;
+            const rpm1 = document.getElementById('add-step-rpm1').value;
+            const rpm2 = document.getElementById('add-step-rpm2').value;
+            const time = document.getElementById('add-step-time').value;
+            const weight = document.getElementById('add-step-weight').value;
+            const error = document.getElementById('add-step-error').value;
+            const vacuum = document.getElementById('add-step-vacuum').value;
+            const note = document.getElementById('add-step-note').value;
+            const isMaterial = document.getElementById('add-step-material').checked;
+            const isFinalCheck = document.getElementById('add-step-final').checked;
+            
+            if (!name) {
+                alert("请输入步骤名称");
+                return;
+            }
+            
+            const newStep = {
+                step: stepTemplates[material].length + 1,
+                name: name,
+                rpm1: rpm1,
+                rpm2: rpm2,
+                time: time,
+                weight: weight,
+                error: error,
+                vacuum: vacuum,
+                note: note,
+                isMaterial: isMaterial,
+                actualWeight: "",
+                buckets: []
+            };
+            
+            if (isFinalCheck) {
+                newStep.isFinalCheck = true;
+                newStep.checkStandards = [];
+                newStep.actualValues = {};
+                
+                const checkItems = document.querySelectorAll('#add-step-check-items .form-row');
+                checkItems.forEach(item => {
+                    const standardName = item.querySelector('.check-standard-name').value;
+                    const standardValue = item.querySelector('.check-standard-value').value;
+                    const standardUnit = item.querySelector('.check-standard-unit').value;
+                    
+                    if (standardName && standardValue) {
+                        newStep.checkStandards.push({
+                            name: standardName,
+                            standard: standardValue,
+                            unit: standardUnit || ''
+                        });
+                        newStep.actualValues[standardName] = "";
+                    }
+                });
+            }
+            
+            stepTemplates[material].push(newStep);
+            
+            // 清空表单
+            document.getElementById('add-step-name').value = '';
+            document.getElementById('add-step-rpm1').value = '';
+            document.getElementById('add-step-rpm2').value = '';
+            document.getElementById('add-step-time').value = '';
+            document.getElementById('add-step-weight').value = '';
+            document.getElementById('add-step-error').value = '';
+            document.getElementById('add-step-vacuum').value = '';
+            document.getElementById('add-step-note').value = '';
+            document.getElementById('add-step-material').checked = false;
+            document.getElementById('add-step-final').checked = false;
+            document.getElementById('add-step-check-items').innerHTML = '';
+            document.getElementById('add-step-check-standards').style.display = 'none';
+            
+            saveTemplatesToLocalStorage();
+            renderStepsManagement();
+            renderAllPots();
+        }
+
+        // 初始化事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 显示汇总面板
+            document.getElementById('show-summary').addEventListener('click', function() {
+                generateMaterialSummary();
+                document.getElementById('summary-panel').style.display = 'block';
+            });
+
+            // 关闭汇总面板
+            document.getElementById('close-summary').addEventListener('click', function() {
+                document.getElementById('summary-panel').style.display = 'none';
+            });
+
+            // 显示管理面板
+            document.getElementById('show-manage').addEventListener('click', function() {
+                renderStepsManagement();
+                document.getElementById('manage-panel').style.display = 'block';
+            });
+
+            // 关闭管理面板
+            document.getElementById('close-manage').addEventListener('click', function() {
+                document.getElementById('manage-panel').style.display = 'none';
+            });
+
+            // 切换工艺步骤标签
+            document.querySelectorAll('.steps-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.steps-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    document.getElementById('positive-steps-list').style.display = 
+                        this.getAttribute('data-material') === 'positive' ? 'block' : 'none';
+                    document.getElementById('negative-steps-list').style.display = 
+                        this.getAttribute('data-material') === 'negative' ? 'block' : 'none';
+                });
+            });
+
+            // 最终检查步骤复选框事件
+            document.getElementById('add-step-final').addEventListener('change', function() {
+                document.getElementById('add-step-check-standards').style.display = 
+                    this.checked ? 'block' : 'none';
+            });
+
+            document.getElementById('edit-step-final').addEventListener('change', function() {
+                document.getElementById('edit-step-check-standards').style.display = 
+                    this.checked ? 'block' : 'none';
+            });
+
+            // 材料切换按钮
+            document.querySelectorAll('.material-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchMaterial(this.getAttribute('data-material'));
+                });
+            });
+
+            // 初始渲染
+            renderAllPots();
+            switchMaterial('positive');
+        });
+    </script>
+</body>
+</html>
